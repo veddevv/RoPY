@@ -45,16 +45,23 @@ def hent_brukerinformasjon(user_id):
         print(f"❌ En ukjent feil oppstod: {e}")
 
 def timeout(last_input_time):
+    reminder_shown = False  # Flag to track if reminder has been shown
     while True:  # Kjør kontinuerlig
         time.sleep(1)
         current_time = time.time()
+        time_left = 20 - (current_time - last_input_time[0])  # Calculate remaining time
+
+        # Vis nedtellingstimer
+        print(f"\r⏳ Tid igjen til inaktivitet: {max(0, int(time_left))} sekunder", end="")
+
         # Sjekk om det har gått mer enn 20 sekunder uten input
-        if current_time - last_input_time[0] > 20:
+        if time_left <= 0:
             print("\n⏰ Tidsgrensen ble nådd! Skriptet avbrytes.")
             sys.exit()
         # Sjekk om det har gått mer enn 10 sekunder uten input
-        elif current_time - last_input_time[0] > 10:
+        elif time_left <= 10 and not reminder_shown:
             print("\n🤔 Er du fortsatt der? Vennligst skriv inn ID-en!")
+            reminder_shown = True  # Set flag to True after showing the reminder
 
 # Liste for å spore tiden for siste input
 last_input_time = [time.time()]
@@ -64,7 +71,7 @@ t = threading.Thread(target=timeout, args=(last_input_time,))
 t.start()
 
 # Kjør funksjonen med en ID
-user_id = input("Skriv inn Roblox bruker-ID: ")
+user_id = input("\nSkriv inn Roblox bruker-ID: ")
 last_input_time[0] = time.time()  # Oppdater tiden for siste input
 
 # Stop tidsavbruddet hvis input er mottatt
