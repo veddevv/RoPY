@@ -1,6 +1,7 @@
 import requests
 import threading
 import time
+import sys
 
 def hent_brukerinformasjon(user_id):
     # Hent data fra Roblox API
@@ -43,21 +44,28 @@ def hent_brukerinformasjon(user_id):
     except Exception as e:
         print(f"❌ En ukjent feil oppstod: {e}")
 
-def timeout():
-    for i in range(20):  # 20 sekunders timer
+def timeout(last_input_time):
+    while True:  # Kjør kontinuerlig
         time.sleep(1)
-        if i == 10:  # Etter 10 sekunder, spør om brukeren fortsatt er der
+        current_time = time.time()
+        # Sjekk om det har gått mer enn 20 sekunder uten input
+        if current_time - last_input_time[0] > 20:
+            print("\n⏰ Tidsgrensen ble nådd! Skriptet avbrytes.")
+            sys.exit()
+        # Sjekk om det har gått mer enn 10 sekunder uten input
+        elif current_time - last_input_time[0] > 10:
             print("\n🤔 Er du fortsatt der? Vennligst skriv inn ID-en!")
-    
-    print("\n⏰ Tidsgrensen ble nådd! Skriptet avbrytes.")
-    exit()
+
+# Liste for å spore tiden for siste input
+last_input_time = [time.time()]
 
 # Start tidsavbruddet i en egen tråd
-t = threading.Thread(target=timeout)
+t = threading.Thread(target=timeout, args=(last_input_time,))
 t.start()
 
 # Kjør funksjonen med en ID
 user_id = input("Skriv inn Roblox bruker-ID: ")
+last_input_time[0] = time.time()  # Oppdater tiden for siste input
 
 # Stop tidsavbruddet hvis input er mottatt
 t.join(timeout=0)  # Hvis input mottas, stopper vi tidsavbruddet
