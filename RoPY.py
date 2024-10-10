@@ -1,4 +1,6 @@
 import requests
+import threading
+import time
 
 def hent_brukerinformasjon(user_id):
     # Hent data fra Roblox API
@@ -28,6 +30,22 @@ def hent_brukerinformasjon(user_id):
     else:
         print("❌ Fant ikke bruker. Sjekk ID-en og prøv igjen.")
 
+def timeout():
+    for i in range(20):  # 20 sekunders timer
+        time.sleep(1)
+        if i == 10:  # Etter 10 sekunder, spør om brukeren fortsatt er der
+            print("\n🤔 Er du fortsatt der? Vennligst skriv inn ID-en!")
+    
+    print("\n⏰ Tidsgrensen ble nådd! Skriptet avbrytes.")
+    exit()
+
+# Start tidsavbruddet i en egen tråd
+t = threading.Thread(target=timeout)
+t.start()
+
 # Kjør funksjonen med en ID
 user_id = input("Skriv inn Roblox bruker-ID: ")
+
+# Stop tidsavbruddet hvis input er mottatt
+t.join(timeout=0)  # Hvis input mottas, stopper vi tidsavbruddet
 hent_brukerinformasjon(user_id)
