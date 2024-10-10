@@ -7,3 +7,5 @@
 - Retrieve follower and following counts for any user.
 - Check if a user is banned on Roblox.
 - Simple and clean output with emoji-enhanced readability! 😎
+
+# The script is in active development. Note that the script may be broken/not behave as it should.
