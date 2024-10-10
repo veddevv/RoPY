@@ -44,9 +44,9 @@ def hent_brukerinformasjon(user_id):
     except Exception as e:
         print(f"❌ En ukjent feil oppstod: {e}")
 
-def timeout(last_input_time):
+def timeout(last_input_time, stop_event):
     reminder_shown = False  # Flag to track if reminder has been shown
-    while True:  # Kjør kontinuerlig
+    while not stop_event.is_set():  # Kjør kontinuerlig til stop_event er satt
         time.sleep(1)
         current_time = time.time()
         time_left = 20 - (current_time - last_input_time[0])  # Calculate remaining time
@@ -65,9 +65,10 @@ def timeout(last_input_time):
 
 # Liste for å spore tiden for siste input
 last_input_time = [time.time()]
+stop_event = threading.Event()  # Create a stop event
 
 # Start tidsavbruddet i en egen tråd
-t = threading.Thread(target=timeout, args=(last_input_time,))
+t = threading.Thread(target=timeout, args=(last_input_time, stop_event))
 t.start()
 
 # Opprett en løkke for å håndtere input og stoppe skripten etter ID-en er skrevet
@@ -75,6 +76,7 @@ while True:
     user_id = input("\nSkriv inn Roblox bruker-ID: ")
     if user_id.strip():  # Sjekk om ID-en er ikke tom
         last_input_time[0] = time.time()  # Oppdater tiden for siste input
+        stop_event.set()  # Set the event to stop the timer
         t.join(timeout=0)  # Stop tidsavbruddet hvis input er mottatt
         hent_brukerinformasjon(user_id)
         break  # Avslutt løkken når ID er mottatt
