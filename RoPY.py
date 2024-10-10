@@ -70,10 +70,14 @@ last_input_time = [time.time()]
 t = threading.Thread(target=timeout, args=(last_input_time,))
 t.start()
 
-# Kjør funksjonen med en ID
-user_id = input("\nSkriv inn Roblox bruker-ID: ")
-last_input_time[0] = time.time()  # Oppdater tiden for siste input
+# Opprett en løkke for å håndtere input og stoppe skripten etter ID-en er skrevet
+while True:
+    user_id = input("\nSkriv inn Roblox bruker-ID: ")
+    if user_id.strip():  # Sjekk om ID-en er ikke tom
+        last_input_time[0] = time.time()  # Oppdater tiden for siste input
+        t.join(timeout=0)  # Stop tidsavbruddet hvis input er mottatt
+        hent_brukerinformasjon(user_id)
+        break  # Avslutt løkken når ID er mottatt
 
-# Stop tidsavbruddet hvis input er mottatt
-t.join(timeout=0)  # Hvis input mottas, stopper vi tidsavbruddet
-hent_brukerinformasjon(user_id)
+# Stopper tråden
+print("\n🛑 Skriptet er avsluttet.")
