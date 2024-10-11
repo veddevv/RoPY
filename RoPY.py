@@ -1,6 +1,4 @@
 import requests
-import threading
-import time
 import sys
 
 def hent_brukerinformasjon(user_id):
@@ -44,42 +42,12 @@ def hent_brukerinformasjon(user_id):
     except Exception as e:
         print(f"❌ En ukjent feil oppstod: {e}")
 
-def timeout(last_input_time, stop_event):
-    reminder_shown = False  # Flag to track if reminder has been shown
-    while not stop_event.is_set():  # Kjør kontinuerlig til stop_event er satt
-        time.sleep(1)
-        current_time = time.time()
-        time_left = 20 - (current_time - last_input_time[0])  # Calculate remaining time
-
-        # Vis nedtellingstimer
-        print(f"\r⏳ Tid igjen til inaktivitet: {max(0, int(time_left))} sekunder", end="")
-
-        # Sjekk om det har gått mer enn 20 sekunder uten input
-        if time_left <= 0:
-            print("\n⏰ Tidsgrensen ble nådd! Skriptet avbrytes.")
-            sys.exit()
-        # Sjekk om det har gått mer enn 10 sekunder uten input
-        elif time_left <= 10 and not reminder_shown:
-            print("\n🤔 Er du fortsatt der? Vennligst skriv inn ID-en!")
-            reminder_shown = True  # Set flag to True after showing the reminder
-
-# Liste for å spore tiden for siste input
-last_input_time = [time.time()]
-stop_event = threading.Event()  # Create a stop event
-
-# Start tidsavbruddet i en egen tråd
-t = threading.Thread(target=timeout, args=(last_input_time, stop_event))
-t.start()
-
 # Opprett en løkke for å håndtere input og stoppe skripten etter ID-en er skrevet
 while True:
     user_id = input("\nSkriv inn Roblox bruker-ID: ")
     if user_id.strip():  # Sjekk om ID-en er ikke tom
-        last_input_time[0] = time.time()  # Oppdater tiden for siste input
-        stop_event.set()  # Set the event to stop the timer
-        t.join(timeout=0)  # Stop tidsavbruddet hvis input er mottatt
         hent_brukerinformasjon(user_id)
         break  # Avslutt løkken når ID er mottatt
 
-# Stopper tråden
+# Stopper skripten
 print("\n🛑 Skriptet er avsluttet.")
