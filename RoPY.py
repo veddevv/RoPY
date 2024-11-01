@@ -1,4 +1,5 @@
 import requests
+from datetime import datetime
 
 # --- Developer mode flag ---
 # For developers only: Set this to True to enable developer mode
@@ -13,65 +14,67 @@ def hent_brukerinformasjon(user_id, language):
         response.raise_for_status()  # Raise an error for bad responses (4xx or 5xx)
 
         data = response.json()
-        brukernavn = data.get("name")
-        visningsnavn = data.get("displayName")
-        opprettet_dato = data.get("created")
-        avatar_url = data.get("avatarUrl")
+        brukernavn = data.get("name", "Unknown")
+        visningsnavn = data.get("displayName", "Unknown")
+        opprettet_dato = data.get("created", "Unknown")
+        avatar_url = data.get("avatarUrl", "Unknown")
         follower_count = data.get("followersCount", "Not available" if language == 'en' else "Ikke tilgjengelig")
         friend_count = data.get("friendsCount", "Not available" if language == 'en' else "Ikke tilgjengelig")
 
         # Clean up the created date
-        rengjort_dato = opprettet_dato.replace("T", " ").replace("Z", "")
+        try:
+            rengjort_dato = datetime.strptime(opprettet_dato, "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            rengjort_dato = opprettet_dato
 
-        # Print user information based on selected language
-        if language == 'en':
-            print("🕹️ User Information:")
-            print(f"👤 Username: {brukernavn}")
-            print(f"🧑‍🤝‍🧑 Display Name: {visningsnavn}")
-            print(f"📅 Created: {rengjort_dato}")
-            print(f"👥 Followers: {follower_count}")
-            print(f"🤝 Friends: {friend_count}")
-            print(f"🖼️ Avatar: {avatar_url}")
-        else:
-            print("🕹️ Brukerinformasjon:")
-            print(f"👤 Brukernavn: {brukernavn}")
-            print(f"🧑‍🤝‍🧑 Visningsnavn: {visningsnavn}")
-            print(f"📅 Opprettet: {rengjort_dato}")
-            print(f"👥 Følgere: {follower_count}")
-            print(f"🤝 Venner: {friend_count}")
-            print(f"🖼️ Avatar: {avatar_url}")
-        
-        # Developer mode: Print additional debug information
-        if DEVELOPER_MODE:
-            print("\n🛠️ Developer Mode:")
-            print(f"📡 Request URL: {url}")
-            print(f"⌛ Status Code: {response.status_code}")
-            print(f"📝 Full Response JSON: {data}")
+        # Print user information
+        print_user_info(language, brukernavn, visningsnavn, rengjort_dato, avatar_url, follower_count, friend_count)
 
     except requests.exceptions.HTTPError as http_err:
-        print(f"❌ {'HTTP error:' if language == 'en' else 'HTTP-feil:'} {http_err}")
-    except requests.exceptions.ConnectionError:
-        print(f"❌ {'Could not connect to Roblox API. Check your internet connection.' if language == 'en' else 'Kunne ikke koble til Roblox API. Sjekk internettforbindelsen.'}")
-    except requests.exceptions.Timeout:
-        print(f"❌ {'Request to Roblox API timed out.' if language == 'en' else 'Tidsavbrudd ved forespørsel til Roblox API.'}")
-    except requests.exceptions.RequestException as err:
-        print(f"❌ {'An error occurred:' if language == 'en' else 'En feil oppstod:'} {err}")
-    except ValueError:
-        print(f"❌ {'Unexpected response format from API.' if language == 'en' else 'Uventet svarformat fra API.'}")
-    except Exception as e:
-        print(f"❌ {'An unknown error occurred:' if language == 'en' else 'En ukjent feil oppstod:'} {e}")
+        print(f"HTTP error occurred: {http_err}")
+    except requests.exceptions.RequestException as req_err:
+        print(f"Request error occurred: {req_err}")
+    except Exception as err:
+        print(f"An error occurred: {err}")
 
-# Prompt the user to select a language
-language = ""
-while language not in ['en', 'no']:
-    language = input("Choose language / Velg språk (en/no): ").lower()
+def print_user_info(language, brukernavn, visningsnavn, rengjort_dato, avatar_url, follower_count, friend_count):
+    if language == 'en':
+        print("🕹️ User Information:")
+        print(f"👤 Username: {brukernavn}")
+        print(f"🧑‍🤝‍🧑 Display Name: {visningsnavn}")
+        print(f"📅 Created: {rengjort_dato}")
+        print(f"📸 Avatar URL: {avatar_url}")
+        print(f"👥 Followers: {follower_count}")
+        print(f"👫 Friends: {friend_count}")
+    else:
+        print("🕹️ Brukerinformasjon:")
+        print(f"👤 Brukernavn: {brukernavn}")
+        print(f"🧑‍🤝‍🧑 Visningsnavn: {visningsnavn}")
+        print(f"📅 Opprettet: {rengjort_dato}")
+        print(f"📸 Avatar URL: {avatar_url}")
+        print(f"👥 Følgere: {follower_count}")
+        print(f"👫 Venner: {friend_count}")
 
-# Create a loop to handle input and stop the script after the user ID is provided
-while True:
-    user_id = input("\nSkriv inn Roblox bruker-ID: " if language == 'no' else "\nEnter Roblox user ID: ")
-    if user_id.strip():  # Check if the ID is not empty
-        hent_brukerinformasjon(user_id, language)
-        break  # Exit the loop when the ID is received
+def main():
+    # Prompt the user to select a language
+    language = ""
+    while language not in ['en', 'no']:
+        language = input("Choose language / Velg språk (en/no): ").lower()
 
-# End the script
-print("\n🛑 Skriptet er avsluttet." if language == 'no' else "\n🛑 Script has ended.")
+    # Create a loop to handle input and stop the script after the user ID is provided
+    while True:
+        user_id = input("\nSkriv inn Roblox bruker-ID: " if language == 'no' else "\nEnter Roblox user ID: ")
+        if user_id.strip():  # Check if the ID is not empty
+            if user_id.isdigit():  # Check if the ID is a valid number
+                hent_brukerinformasjon(user_id, language)
+                break  # Exit the loop when the ID is received
+            else:
+                print("Ugyldig ID, prøv igjen." if language == 'no' else "Invalid ID, please try again.")
+        else:
+            print("ID kan ikke være tom, prøv igjen." if language == 'no' else "ID cannot be empty, please try again.")
+
+    # End the script
+    print("\n🛑 Skriptet er avsluttet." if language == 'no' else "\n🛑 Script has ended.")
+
+if __name__ == "__main__":
+    main()
