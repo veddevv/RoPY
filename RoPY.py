@@ -1,5 +1,6 @@
 import requests
 from datetime import datetime
+from typing import Optional, Dict
 
 # --- Developer mode flag ---
 # For developers only: Set this to True to enable developer mode
@@ -10,8 +11,14 @@ API_URL = "https://users.roblox.com/v1/users/"
 LANGUAGE_EN = 'en'
 LANGUAGE_NO = 'no'
 
-def hent_brukerinformasjon(user_id, language):
-    # Fetch data from the Roblox API
+def hent_brukerinformasjon(user_id: str, language: str) -> None:
+    """
+    Fetch data from the Roblox API and print user information.
+
+    Parameters:
+    user_id (str): The ID of the Roblox user.
+    language (str): The language for user information display.
+    """
     url = f"{API_URL}{user_id}"
 
     try:
@@ -37,12 +44,28 @@ def hent_brukerinformasjon(user_id, language):
 
     except requests.exceptions.HTTPError as http_err:
         print(f"HTTP error occurred: {http_err}")
+    except requests.exceptions.ConnectionError:
+        print("A network problem occurred while trying to fetch user information.")
+    except requests.exceptions.Timeout:
+        print("The request timed out while trying to fetch user information.")
     except requests.exceptions.RequestException as req_err:
         print(f"Request error occurred: {req_err}")
     except Exception as err:
-        print(f"An error occurred: {err}")
+        print(f"An unexpected error occurred: {err}")
 
-def print_user_info(language, brukernavn, visningsnavn, rengjort_dato, avatar_url, follower_count, friend_count):
+def print_user_info(language: str, brukernavn: str, visningsnavn: str, rengjort_dato: str, avatar_url: str, follower_count: str, friend_count: str) -> None:
+    """
+    Displays information about a user in the specified language.
+
+    Parameters:
+    language (str): The language for user information display.
+    brukernavn (str): The username of the user.
+    visningsnavn (str): The display name of the user.
+    rengjort_dato (str): The cleaned creation date of the user.
+    avatar_url (str): The avatar URL of the user.
+    follower_count (str): The follower count of the user.
+    friend_count (str): The friend count of the user.
+    """
     info = {
         LANGUAGE_EN: {
             "title": "🕹️ User Information:",
@@ -73,7 +96,11 @@ def print_user_info(language, brukernavn, visningsnavn, rengjort_dato, avatar_ur
     print(f"{lang_info['followers']}{follower_count}")
     print(f"{lang_info['friends']}{friend_count}")
 
-def main():
+def main() -> None:
+    """
+    Main function to run the script.
+    Prompts the user to enter the name of a game and displays its information.
+    """
     # Prompt the user to select a language
     language = ""
     while language not in [LANGUAGE_EN, LANGUAGE_NO]:
