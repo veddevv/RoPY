@@ -38,3 +38,5 @@
 
 ## License 📜
 - This project is licensed under the Gnu General Public License Version 3.
+
+Please star the repo to support me!
