@@ -1,6 +1,11 @@
 import requests
 from datetime import datetime
 from typing import Optional, Dict
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # --- Developer mode flag ---
 # For developers only: Set this to True to enable developer mode
@@ -34,24 +39,36 @@ def hent_brukerinformasjon(user_id: str, language: str) -> None:
         friend_count = data.get("friendsCount", "Not available" if language == LANGUAGE_EN else "Ikke tilgjengelig")
 
         # Clean up the created date
-        try:
-            rengjort_dato = datetime.strptime(opprettet_dato, "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%Y-%m-%d %H:%M:%S")
-        except ValueError:
-            rengjort_dato = opprettet_dato
+        rengjort_dato = parse_date(opprettet_dato)
 
         # Print user information
         print_user_info(language, brukernavn, visningsnavn, rengjort_dato, avatar_url, follower_count, friend_count)
 
     except requests.exceptions.HTTPError as http_err:
-        print(f"HTTP error occurred: {http_err}")
+        logger.error(f"HTTP error occurred: {http_err}")
     except requests.exceptions.ConnectionError:
-        print("A network problem occurred while trying to fetch user information.")
+        logger.error("A network problem occurred while trying to fetch user information.")
     except requests.exceptions.Timeout:
-        print("The request timed out while trying to fetch user information.")
+        logger.error("The request timed out while trying to fetch user information.")
     except requests.exceptions.RequestException as req_err:
-        print(f"Request error occurred: {req_err}")
+        logger.error(f"Request error occurred: {req_err}")
     except Exception as err:
-        print(f"An unexpected error occurred: {err}")
+        logger.error(f"An unexpected error occurred: {err}")
+
+def parse_date(date_str: str) -> str:
+    """
+    Parse and format the date string.
+
+    Parameters:
+    date_str (str): The date string to parse.
+
+    Returns:
+    str: The formatted date string.
+    """
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return date_str
 
 def print_user_info(language: str, brukernavn: str, visningsnavn: str, rengjort_dato: str, avatar_url: str, follower_count: str, friend_count: str) -> None:
     """
@@ -88,13 +105,13 @@ def print_user_info(language: str, brukernavn: str, visningsnavn: str, rengjort_
     }
 
     lang_info = info.get(language, info[LANGUAGE_EN])
-    print(lang_info["title"])
-    print(f"{lang_info['username']}{brukernavn}")
-    print(f"{lang_info['display_name']}{visningsnavn}")
-    print(f"{lang_info['created']}{rengjort_dato}")
-    print(f"{lang_info['avatar_url']}{avatar_url}")
-    print(f"{lang_info['followers']}{follower_count}")
-    print(f"{lang_info['friends']}{friend_count}")
+    logger.info(f"{lang_info['title']}")
+    logger.info(f"{lang_info['username']}{brukernavn}")
+    logger.info(f"{lang_info['display_name']}{visningsnavn}")
+    logger.info(f"{lang_info['created']}{rengjort_dato}")
+    logger.info(f"{lang_info['avatar_url']}{avatar_url}")
+    logger.info(f"{lang_info['followers']}{follower_count}")
+    logger.info(f"{lang_info['friends']}{friend_count}")
 
 def main() -> None:
     """
@@ -114,12 +131,12 @@ def main() -> None:
                 hent_brukerinformasjon(user_id, language)
                 break  # Exit the loop when the ID is received
             else:
-                print("Ugyldig ID, prøv igjen." if language == LANGUAGE_NO else "Invalid ID, please try again.")
+                logger.warning("Ugyldig ID, prøv igjen." if language == LANGUAGE_NO else "Invalid ID, please try again.")
         else:
-            print("ID kan ikke være tom, prøv igjen." if language == LANGUAGE_NO else "ID cannot be empty, please try again.")
+            logger.warning("ID kan ikke være tom, prøv igjen." if language == LANGUAGE_NO else "ID cannot be empty, please try again.")
 
     # End the script
-    print("\n🛑 Skriptet er avsluttet." if language == LANGUAGE_NO else "\n🛑 Script has ended.")
+    logger.info("\n🛑 Skriptet er avsluttet." if language == LANGUAGE_NO else "\n🛑 Script has ended.")
 
 if __name__ == "__main__":
     main()
