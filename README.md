@@ -1,6 +1,6 @@
 # RoPY - Roblox User Info Python Script 🎮🐍
 
-**RoPY** is a simple Python script that fetches detailed information about any Roblox user by utilizing Roblox's public API. This script provides essential user details such as username, display name, creation date, avatar URL, follower count, friend count, and whether the user is banned.
+**RoPY** is a simple Python script that fetches detailed information about any Roblox user by utilizing Roblox's public API. This script provides essential user details such as username, display name, creation date, avatar URL, and more.
 
 ## Features ✨
 - Fetch Roblox user profile information: username, display name, creation date, avatar URL, and more.
@@ -8,6 +8,7 @@
 - Check if a user is banned on Roblox.
 - Simple and clean output with emoji-enhanced readability! 😎
 - Supports both English and Norwegian languages.
+- Improved error handling and user feedback for various scenarios.
 
 ## Usage 🛠️
 1. **Clone the repository**:
