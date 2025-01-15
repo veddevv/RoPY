@@ -41,6 +41,9 @@ def hent_brukerinformasjon(user_id: str, language: str) -> None:
         # Clean up the created date
         rengjort_dato = parse_date(opprettet_dato)
 
+        # Log successful API response
+        logger.info(f"Successfully fetched data for user ID {user_id}")
+
         # Print user information
         print_user_info(language, brukernavn, visningsnavn, rengjort_dato, avatar_url, follower_count, friend_count)
 
