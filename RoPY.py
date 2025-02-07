@@ -14,6 +14,7 @@ DEVELOPER_MODE = False  # Set to True for extra technical details
 API_URL = "https://users.roblox.com/v1/users/"
 LANGUAGE_EN = 'en'
 
+
 def hent_brukerinformasjon(user_id: str) -> None:
     """
     Fetch data from the Roblox API and print user information.
@@ -28,37 +29,29 @@ def hent_brukerinformasjon(user_id: str) -> None:
         response.raise_for_status()  # Raise an error for bad responses (4xx or 5xx)
 
         data = response.json()
-        brukernavn = data.get("name", "Unknown")
-        visningsnavn = data.get("displayName", "Unknown")
-        opprettet_dato = data.get("created", "Unknown")
-        avatar_url = data.get("avatarUrl", "Unknown")
-        follower_count = data.get("followersCount", "Not available")
-        friend_count = data.get("friendsCount", "Not available")
-
-        # Clean up the created date
-        rengjort_dato = parse_date(opprettet_dato)
+        user_info = {
+            "username": data.get("name", "Unknown"),
+            "display_name": data.get("displayName", "Unknown"),
+            "created_date": parse_date(data.get("created", "Unknown")),
+            "avatar_url": data.get("avatarUrl", "Unknown"),
+            "followers_count": data.get("followersCount", "Not available"),
+            "friends_count": data.get("friendsCount", "Not available")
+        }
 
         # Log successful API response
-        logger.info(f"Successfully fetched data for user ID {user_id}")
+        logger.info(f"Successfully fetched data for user ID {user_id}. Data: {data}")
 
         # Print user information
-        print_user_info(brukernavn, visningsnavn, rengjort_dato, avatar_url, follower_count, friend_count)
+        print_user_info(**user_info)
 
-    except requests.exceptions.HTTPError as http_err:
-        logger.error(f"HTTP error occurred: {http_err}")
-        print("An error occurred while fetching user information. Please try again later.")
-    except requests.exceptions.ConnectionError:
-        logger.error("A network problem occurred while trying to fetch user information.")
-        print("There was a network problem. Please check your connection and try again.")
-    except requests.exceptions.Timeout:
-        logger.error("The request timed out while trying to fetch user information.")
-        print("The request timed out. Please try again later.")
-    except requests.exceptions.RequestException as req_err:
+    except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout, requests.exceptions.RequestException) as req_err:
         logger.error(f"Request error occurred: {req_err}")
-        print("An error occurred while fetching user information. Please try again later.")
+        print("A network or request error occurred while fetching user information. Please try again later.")
     except Exception as err:
         logger.error(f"An unexpected error occurred: {err}")
         print("An unexpected error occurred. Please try again later.")
+
 
 def parse_date(date_str: str) -> str:
     """
@@ -78,45 +71,45 @@ def parse_date(date_str: str) -> str:
             continue
     return date_str
 
-def print_user_info(brukernavn: str, visningsnavn: str, rengjort_dato: str, avatar_url: str, follower_count: str, friend_count: str) -> None:
+
+def print_user_info(username: str, display_name: str, created_date: str, avatar_url: str, followers_count: str, friends_count: str) -> None:
     """
     Displays information about a user.
 
     Parameters:
-    brukernavn (str): The username of the user.
-    visningsnavn (str): The display name of the user.
-    rengjort_dato (str): The cleaned creation date of the user.
+    username (str): The username of the user.
+    display_name (str): The display name of the user.
+    created_date (str): The cleaned creation date of the user.
     avatar_url (str): The avatar URL of the user.
-    follower_count (str): The follower count of the user.
-    friend_count (str): The friend count of the user.
+    followers_count (str): The follower count of the user.
+    friends_count (str): The friend count of the user.
     """
     print("🕹️ User Information:")
-    print(f"👤 Username: {brukernavn}")
-    print(f"🧑‍🤝‍🧑 Display Name: {visningsnavn}")
-    print(f"📅 Created: {rengjort_dato}")
+    print(f"👤 Username: {username}")
+    print(f"🧑‍🤝‍🧑 Display Name: {display_name}")
+    print(f"📅 Created: {created_date}")
     print(f"📸 Avatar URL: {avatar_url}")
-    print(f"👥 Followers: {follower_count}")
-    print(f"👫 Friends: {friend_count}")
+    print(f"👥 Followers: {followers_count}")
+    print(f"👫 Friends: {friends_count}")
+
 
 def main() -> None:
     """
     Main function to run the script.
-    Prompts the user to enter the name of a game and displays its information.
+    Prompts the user to enter the ID of a Roblox user and displays their information.
     """
     # Create a loop to handle input and stop the script after the user ID is provided
     while True:
         user_id = input("\nEnter Roblox user ID: ")
-        if user_id.strip():  # Check if the ID is not empty
-            if user_id.isdigit():  # Check if the ID is a valid number
-                hent_brukerinformasjon(user_id)
-                break  # Exit the loop when the ID is received
-            else:
-                print("Invalid ID, please try again.")
+        if user_id.strip() and user_id.isdigit():  # Check if the ID is not empty and is a valid number
+            hent_brukerinformasjon(user_id)
+            break  # Exit the loop when the ID is received
         else:
-            print("ID cannot be empty, please try again.")
+            print("Invalid ID, please enter a valid numeric user ID.")
 
     # End the script
     print("\n🛑 Script has ended.")
+
 
 if __name__ == "__main__":
     main()
