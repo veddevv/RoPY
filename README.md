@@ -28,7 +28,6 @@
     ```
 
 4. **Follow the prompts**:
-    - Choose your language (English or Norwegian).
     - Enter the Roblox user ID.
 
 ## Developer Mode 🛠️
