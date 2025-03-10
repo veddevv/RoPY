@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 import requests
+import time
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,7 +25,11 @@ def fetch_user_information(user_id: str) -> None:
     url = f"{API_URL}{user_id}"
 
     try:
+        start_time = time.time()  # Record the start time before the request
         response = requests.get(url, timeout=10)
+        end_time = time.time()  # Record the end time after the response is received
+        latency = end_time - start_time  # Calculate the latency
+
         response.raise_for_status()  # Raise an error for bad responses (4xx or 5xx)
 
         data = response.json()
@@ -34,7 +39,8 @@ def fetch_user_information(user_id: str) -> None:
             "created_date": parse_date(data.get("created", "Unknown")),
             "avatar_url": data.get("avatarUrl", "Unknown"),
             "followers_count": data.get("followersCount", "Not available"),
-            "friends_count": data.get("friendsCount", "Not available")
+            "friends_count": data.get("friendsCount", "Not available"),
+            "latency": f"{latency:.2f} seconds"  # Add latency to user_info
         }
 
         # Log successful API response
@@ -69,7 +75,7 @@ def parse_date(date_str: str) -> str:
             continue
     return date_str
 
-def display_user_info(username: str, display_name: str, created_date: str, avatar_url: str, followers_count: str, friends_count: str) -> None:
+def display_user_info(username: str, display_name: str, created_date: str, avatar_url: str, followers_count: str, friends_count: str, latency: str) -> None:
     """
     Displays information about a user.
     
@@ -80,14 +86,16 @@ def display_user_info(username: str, display_name: str, created_date: str, avata
     avatar_url (str): The avatar URL of the user.
     followers_count (str): The follower count of the user.
     friends_count (str): The friend count of the user.
+    latency (str): The latency of the request.
     """
-    print("🕹️ User Information:")
-    print(f"👤 Username: {username}")
-    print(f"🧑‍🤝‍🧑 Display Name: {display_name}")
-    print(f"📅 Created: {created_date}")
-    print(f"📸 Avatar URL: {avatar_url}")
-    print(f"👥 Followers: {followers_count}")
-    print(f"👫 Friends: {friends_count}")
+    print("User Information:")
+    print(f"Username: {username}")
+    print(f"Display Name: {display_name}")
+    print(f"Created: {created_date}")
+    print(f"Avatar URL: {avatar_url}")
+    print(f"Followers: {followers_count}")
+    print(f"Friends: {friends_count}")
+    print(f"Latency: {latency}")
 
 def main() -> None:
     """
@@ -103,7 +111,7 @@ def main() -> None:
             print("Invalid ID, please enter a valid numeric user ID.")
 
     # End the script
-    print("\n🛑 Script has ended.")
+    print("\nScript has ended.")
 
 if __name__ == "__main__":
     main()
