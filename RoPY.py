@@ -14,11 +14,10 @@ DEVELOPER_MODE = False  # Set to True for extra technical details
 API_URL = "https://users.roblox.com/v1/users/"
 LANGUAGE_EN = 'en'
 
-
-def hent_brukerinformasjon(user_id: str) -> None:
+def fetch_user_information(user_id: str) -> None:
     """
     Fetch data from the Roblox API and print user information.
-
+    
     Parameters:
     user_id (str): The ID of the Roblox user.
     """
@@ -42,7 +41,7 @@ def hent_brukerinformasjon(user_id: str) -> None:
         logger.info(f"Successfully fetched data for user ID {user_id}. Data: {data}")
 
         # Print user information
-        print_user_info(**user_info)
+        display_user_info(**user_info)
 
     except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
             requests.exceptions.Timeout, requests.exceptions.RequestException) as req_err:
@@ -52,14 +51,13 @@ def hent_brukerinformasjon(user_id: str) -> None:
         logger.error(f"An unexpected error occurred: {err}")
         print("An unexpected error occurred. Please try again later.")
 
-
 def parse_date(date_str: str) -> str:
     """
     Parse and format the date string.
-
+    
     Parameters:
     date_str (str): The date string to parse.
-
+    
     Returns:
     str: The formatted date string.
     """
@@ -71,11 +69,10 @@ def parse_date(date_str: str) -> str:
             continue
     return date_str
 
-
-def print_user_info(username: str, display_name: str, created_date: str, avatar_url: str, followers_count: str, friends_count: str) -> None:
+def display_user_info(username: str, display_name: str, created_date: str, avatar_url: str, followers_count: str, friends_count: str) -> None:
     """
     Displays information about a user.
-
+    
     Parameters:
     username (str): The username of the user.
     display_name (str): The display name of the user.
@@ -92,24 +89,21 @@ def print_user_info(username: str, display_name: str, created_date: str, avatar_
     print(f"👥 Followers: {followers_count}")
     print(f"👫 Friends: {friends_count}")
 
-
 def main() -> None:
     """
     Main function to run the script.
     Prompts the user to enter the ID of a Roblox user and displays their information.
     """
-    # Create a loop to handle input and stop the script after the user ID is provided
     while True:
         user_id = input("\nEnter Roblox user ID: ")
         if user_id.strip() and user_id.isdigit():  # Check if the ID is not empty and is a valid number
-            hent_brukerinformasjon(user_id)
+            fetch_user_information(user_id)
             break  # Exit the loop when the ID is received
         else:
             print("Invalid ID, please enter a valid numeric user ID.")
 
     # End the script
     print("\n🛑 Script has ended.")
-
 
 if __name__ == "__main__":
     main()
