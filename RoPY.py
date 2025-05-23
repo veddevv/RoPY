@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 import requests
 import time
+import sys
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -14,6 +15,9 @@ DEVELOPER_MODE = False  # Set to True for extra technical details
 # Constants
 API_URL = "https://users.roblox.com/v1/users/"
 LANGUAGE_EN = 'en'
+MAX_RETRIES = 3
+RETRY_DELAY = 2  # seconds
+MAX_ID_LENGTH = 20  # Reasonable maximum length for a Roblox user ID
 
 def fetch_user_information(user_id: str) -> None:
     """
@@ -23,39 +27,55 @@ def fetch_user_information(user_id: str) -> None:
     user_id (str): The ID of the Roblox user.
     """
     url = f"{API_URL}{user_id}"
+    
+    for attempt in range(MAX_RETRIES):
+        try:
+            start_time = time.time()
+            response = requests.get(url, timeout=10)
+            end_time = time.time()
+            latency = end_time - start_time
 
-    try:
-        start_time = time.time()  # Record the start time before the request
-        response = requests.get(url, timeout=10)
-        end_time = time.time()  # Record the end time after the response is received
-        latency = end_time - start_time  # Calculate the latency
+            response.raise_for_status()
 
-        response.raise_for_status()  # Raise an error for bad responses (4xx or 5xx)
+            data = response.json()
+            user_info = {
+                "username": data.get("name", "Unknown"),
+                "display_name": data.get("displayName", "Unknown"),
+                "created_date": parse_date(data.get("created", "Unknown")),
+                "avatar_url": data.get("avatarUrl", "Unknown"),
+                "followers_count": data.get("followersCount", "Not available"),
+                "friends_count": data.get("friendsCount", "Not available"),
+                "latency": f"{latency:.2f} seconds"
+            }
 
-        data = response.json()
-        user_info = {
-            "username": data.get("name", "Unknown"),
-            "display_name": data.get("displayName", "Unknown"),
-            "created_date": parse_date(data.get("created", "Unknown")),
-            "avatar_url": data.get("avatarUrl", "Unknown"),
-            "followers_count": data.get("followersCount", "Not available"),
-            "friends_count": data.get("friendsCount", "Not available"),
-            "latency": f"{latency:.2f} seconds"  # Add latency to user_info
-        }
+            logger.info(f"Successfully fetched data for user ID {user_id}")
+            if DEVELOPER_MODE:
+                logger.debug(f"Raw data: {data}")
 
-        # Log successful API response
-        logger.info(f"Successfully fetched data for user ID {user_id}. Data: {data}")
+            display_user_info(**user_info)
+            break
 
-        # Print user information
-        display_user_info(**user_info)
-
-    except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
-            requests.exceptions.Timeout, requests.exceptions.RequestException) as req_err:
-        logger.error(f"Request error occurred: {req_err}")
-        print("A network or request error occurred while fetching user information. Please try again later.")
-    except Exception as err:
-        logger.error(f"An unexpected error occurred: {err}")
-        print("An unexpected error occurred. Please try again later.")
+        except requests.exceptions.HTTPError as http_err:
+            if response.status_code == 429:  # Too Many Requests
+                if attempt < MAX_RETRIES - 1:
+                    logger.warning(f"Rate limit hit. Waiting {RETRY_DELAY} seconds before retry...")
+                    time.sleep(RETRY_DELAY)
+                    continue
+            logger.error(f"HTTP error occurred: {http_err}")
+            print(f"Error: {response.status_code} - Unable to fetch user information.")
+            break
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as conn_err:
+            logger.error(f"Connection error occurred: {conn_err}")
+            if attempt < MAX_RETRIES - 1:
+                logger.info(f"Retrying... Attempt {attempt + 1} of {MAX_RETRIES}")
+                time.sleep(RETRY_DELAY)
+                continue
+            print("A network error occurred. Please check your internet connection.")
+            break
+        except Exception as err:
+            logger.error(f"An unexpected error occurred: {err}")
+            print("An unexpected error occurred. Please try again later.")
+            break
 
 def parse_date(date_str: str) -> str:
     """
@@ -67,13 +87,18 @@ def parse_date(date_str: str) -> str:
     Returns:
     str: The formatted date string.
     """
+    if not date_str or date_str == "Unknown":
+        return "Unknown"
+
     date_formats = ["%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%SZ"]
     for fmt in date_formats:
         try:
             return datetime.strptime(date_str, fmt).strftime("%Y-%m-%d %H:%M:%S")
         except ValueError:
             continue
-    return date_str
+    
+    logger.warning(f"Could not parse date string: {date_str}")
+    return "Invalid date format"
 
 def display_user_info(username: str, display_name: str, created_date: str, avatar_url: str, followers_count: str, friends_count: str, latency: str) -> None:
     """
@@ -88,7 +113,7 @@ def display_user_info(username: str, display_name: str, created_date: str, avata
     friends_count (str): The friend count of the user.
     latency (str): The latency of the request.
     """
-    print("User Information:")
+    print("\nUser Information:")
     print(f"Username: {username}")
     print(f"Display Name: {display_name}")
     print(f"Created: {created_date}")
@@ -97,21 +122,65 @@ def display_user_info(username: str, display_name: str, created_date: str, avata
     print(f"Friends: {friends_count}")
     print(f"Latency: {latency}")
 
+def validate_user_id(user_id: str) -> bool:
+    """
+    Validate the user ID input.
+    
+    Parameters:
+    user_id (str): The user ID to validate.
+    
+    Returns:
+    bool: True if valid, False otherwise.
+    """
+    if not user_id.strip():
+        print("Error: ID cannot be empty.")
+        return False
+    
+    if not user_id.isdigit():
+        print("Error: ID must contain only numbers.")
+        return False
+        
+    if len(user_id) > MAX_ID_LENGTH:
+        print(f"Error: ID is too long (maximum {MAX_ID_LENGTH} digits).")
+        return False
+        
+    if int(user_id) <= 0:
+        print("Error: ID must be a positive number.")
+        return False
+        
+    return True
+
 def main() -> None:
     """
     Main function to run the script.
     Prompts the user to enter the ID of a Roblox user and displays their information.
     """
+    print("Welcome to RoPY - Roblox User Information Fetcher")
+    print("Enter 'q' or 'quit' to exit the program")
+    
     while True:
-        user_id = input("\nEnter Roblox user ID: ")
-        if user_id.strip() and user_id.isdigit():  # Check if the ID is not empty and is a valid number
+        user_id = input("\nEnter Roblox user ID: ").strip().lower()
+        
+        if user_id in ('q', 'quit'):
+            print("\nExiting program. Goodbye!")
+            sys.exit(0)
+            
+        if validate_user_id(user_id):
             fetch_user_information(user_id)
-            break  # Exit the loop when the ID is received
-        else:
-            print("Invalid ID, please enter a valid numeric user ID.")
-
-    # End the script
-    print("\nScript has ended.")
+            
+            while True:
+                continue_choice = input("\nWould you like to look up another user? (y/n): ").strip().lower()
+                if continue_choice in ('y', 'yes'):
+                    break
+                elif continue_choice in ('n', 'no'):
+                    print("\nExiting program. Goodbye!")
+                    sys.exit(0)
+                else:
+                    print("Please enter 'y' or 'n'")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n\nProgram interrupted by user. Goodbye!")
+        sys.exit(0)
