@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from typing import Dict, Any
 import requests
 import time
 import sys
@@ -14,7 +15,6 @@ DEVELOPER_MODE = False  # Set to True for extra technical details
 
 # Constants
 API_URL = "https://users.roblox.com/v1/users/"
-LANGUAGE_EN = 'en'
 MAX_RETRIES = 3
 RETRY_DELAY = 2  # seconds
 MAX_ID_LENGTH = 20  # Reasonable maximum length for a Roblox user ID
@@ -38,7 +38,7 @@ def fetch_user_information(user_id: str) -> None:
             response.raise_for_status()
 
             data = response.json()
-            user_info = {
+            user_info: Dict[str, Any] = {
                 "username": data.get("name", "Unknown"),
                 "display_name": data.get("displayName", "Unknown"),
                 "created_date": parse_date(data.get("created", "Unknown")),
@@ -56,13 +56,18 @@ def fetch_user_information(user_id: str) -> None:
             break
 
         except requests.exceptions.HTTPError as http_err:
-            if response.status_code == 429:  # Too Many Requests
-                if attempt < MAX_RETRIES - 1:
-                    logger.warning(f"Rate limit hit. Waiting {RETRY_DELAY} seconds before retry...")
-                    time.sleep(RETRY_DELAY)
-                    continue
-            logger.error(f"HTTP error occurred: {http_err}")
-            print(f"Error: {response.status_code} - Unable to fetch user information.")
+            if hasattr(http_err, 'response') and http_err.response is not None:
+                status_code = http_err.response.status_code
+                if status_code == 429:  # Too Many Requests
+                    if attempt < MAX_RETRIES - 1:
+                        logger.warning(f"Rate limit hit. Waiting {RETRY_DELAY} seconds before retry...")
+                        time.sleep(RETRY_DELAY)
+                        continue
+                logger.error(f"HTTP error occurred: {http_err}")
+                print(f"Error: {status_code} - Unable to fetch user information.")
+            else:
+                logger.error(f"HTTP error occurred: {http_err}")
+                print("Error: Unable to fetch user information.")
             break
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as conn_err:
             logger.error(f"Connection error occurred: {conn_err}")
@@ -133,19 +138,27 @@ def validate_user_id(user_id: str) -> bool:
     bool: True if valid, False otherwise.
     """
     if not user_id.strip():
-        print("Error: ID cannot be empty.")
+        error_msg = "Error: ID cannot be empty."
+        print(error_msg)
+        logger.warning("User provided empty ID")
         return False
     
     if not user_id.isdigit():
-        print("Error: ID must contain only numbers.")
+        error_msg = "Error: ID must contain only numbers."
+        print(error_msg)
+        logger.warning(f"User provided invalid ID format: {user_id}")
         return False
         
     if len(user_id) > MAX_ID_LENGTH:
-        print(f"Error: ID is too long (maximum {MAX_ID_LENGTH} digits).")
+        error_msg = f"Error: ID is too long (maximum {MAX_ID_LENGTH} digits)."
+        print(error_msg)
+        logger.warning(f"User provided ID too long: {len(user_id)} digits")
         return False
         
     if int(user_id) <= 0:
-        print("Error: ID must be a positive number.")
+        error_msg = "Error: ID must be a positive number."
+        print(error_msg)
+        logger.warning(f"User provided non-positive ID: {user_id}")
         return False
         
     return True
@@ -159,24 +172,33 @@ def main() -> None:
     print("Enter 'q' or 'quit' to exit the program")
     
     while True:
-        user_id = input("\nEnter Roblox user ID: ").strip().lower()
+        try:
+            user_input = input("\nEnter Roblox user ID: ").strip()
+        except EOFError:
+            print("\n\nInput stream ended. Exiting program. Goodbye!")
+            sys.exit(0)
         
-        if user_id in ('q', 'quit'):
+        # Check for quit commands (case-insensitive)
+        if user_input.lower() in ('q', 'quit'):
             print("\nExiting program. Goodbye!")
             sys.exit(0)
             
-        if validate_user_id(user_id):
-            fetch_user_information(user_id)
+        if validate_user_id(user_input):
+            fetch_user_information(user_input)
             
             while True:
-                continue_choice = input("\nWould you like to look up another user? (y/n): ").strip().lower()
-                if continue_choice in ('y', 'yes'):
-                    break
-                elif continue_choice in ('n', 'no'):
-                    print("\nExiting program. Goodbye!")
+                try:
+                    continue_choice = input("\nWould you like to look up another user? (y/n): ").strip().lower()
+                    if continue_choice in ('y', 'yes'):
+                        break
+                    elif continue_choice in ('n', 'no'):
+                        print("\nExiting program. Goodbye!")
+                        sys.exit(0)
+                    else:
+                        print("Please enter 'y' or 'n'")
+                except EOFError:
+                    print("\n\nInput stream ended. Exiting program. Goodbye!")
                     sys.exit(0)
-                else:
-                    print("Please enter 'y' or 'n'")
 
 if __name__ == "__main__":
     try:
